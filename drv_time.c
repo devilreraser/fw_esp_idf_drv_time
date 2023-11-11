@@ -39,7 +39,6 @@
 /* *****************************************************************************
  * Constants and Macros Definitions
  **************************************************************************** */
-#define USE_SNTP    1
 
 /* *****************************************************************************
  * Enumeration Definitions
@@ -152,7 +151,7 @@ void drv_time_init(void)
 
     #if CONFIG_DRV_SNTP_USE
     drv_time_print("On Init Before sntp");
-    drv_sntp_initialize_sntp(time_sync_notification_cb);
+    drv_sntp_init(time_sync_notification_cb);
     drv_sntp_set_time_manual(bTimeStampUseManual);
     drv_time_print("On Init After  sntp");
     #endif
