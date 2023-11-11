@@ -14,9 +14,6 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-#include <sdkconfig.h>
-#if CONFIG_DRV_TIME_USE
-
 /* *****************************************************************************
  * Header Includes
  **************************************************************************** */
@@ -66,9 +63,6 @@ typedef struct
 void drv_time_init(void);
 void drv_time_print(char* tag);
 struct tm* drv_time_get (suseconds_t* pusec);
-void drv_time_configure(void);
-
-#endif //#if CONFIG_DRV_TIME_USE
 
 #ifdef __cplusplus
 }

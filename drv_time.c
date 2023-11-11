@@ -13,10 +13,14 @@
  **************************************************************************** */
 #include "drv_time.h"
 
-#if CONFIG_DRV_TIME_USE
+#if CONFIG_DRV_RTC_USE
+#include "drv_rtc.h"
+#endif
 
-#include "drv_rtc_if.h"
-#include "drv_sntp_if.h"
+
+#if CONFIG_DRV_SNTP_USE
+#include "drv_sntp.h"
+#endif
 
 #include <stdio.h>
 #include <stdint.h>
@@ -63,8 +67,41 @@ bool bTimeStampUseManual = false;
 /* *****************************************************************************
  * Functions
  **************************************************************************** */
+void time_sync_notification_cb(struct timeval *tv)
+{
+    #if CONFIG_DRV_RTC_USE
+    struct timeval tv_now1;
+    struct timeval tv_now2;
+    time_t local_now;
+    do
+    {
+        gettimeofday(&tv_now1, NULL);
+        time(&local_now);
+        gettimeofday(&tv_now2, NULL); 
+        //to do exit if time not rolling 
+    } while (tv_now1.tv_sec == tv_now2.tv_sec);
+    
+    bool bWriteSuccess = drv_rtc_time_wr(tv_now2.tv_sec);
+
+    if (bWriteSuccess)
+    {
+        ESP_LOGI(TAG, "RTC Write Success");
+    }
+    else
+    {
+        ESP_LOGE(TAG, "RTC Write Failure");
+    }
+    #endif  /* #if CONFIG_DRV_RTC_USE */
+
+    ESP_LOGW(  TAG, LOG_COLOR(LOG_COLOR_CYAN)"Notification of a time synchronization event");
+    drv_time_print("On SNTP Sync");
+}
+
+
 void drv_time_init(void)
 {
+    #if CONFIG_DRV_RTC_USE
+
     struct tm rtc_time_info;
     char strftime_buf_get[64];
     //struct tm* p_rtc_time_info = drv_rtc_read();
@@ -111,10 +148,13 @@ void drv_time_init(void)
         }
     }
 
-    
-    drv_time_print("On Reset");
-    #if USE_SNTP
-    //drv_sntp_on_reset();
+    #endif /* #if CONFIG_DRV_RTC_USE */
+
+    #if CONFIG_DRV_SNTP_USE
+    drv_time_print("On Init Before sntp");
+    drv_sntp_initialize_sntp(time_sync_notification_cb);
+    drv_sntp_set_time_manual(bTimeStampUseManual);
+    drv_time_print("On Init After  sntp");
     #endif
 
 }
@@ -199,49 +239,10 @@ struct tm* drv_time_get (suseconds_t* pusec)
 }
 
 
-void time_sync_notification_cb(struct timeval *tv)
-{
-    struct timeval tv_now1;
-    struct timeval tv_now2;
-    time_t local_now;
-    do
-    {
-        gettimeofday(&tv_now1, NULL);
-        time(&local_now);
-        gettimeofday(&tv_now2, NULL); 
-        //to do exit if time not rolling 
-    } while (tv_now1.tv_sec == tv_now2.tv_sec);
-    
-    bool bWriteSuccess = drv_rtc_time_wr(tv_now2.tv_sec);
-
-    if (bWriteSuccess)
-    {
-        ESP_LOGI(TAG, "RTC I2C Write Success");
-    }
-    else
-    {
-        ESP_LOGE(TAG, "RTC I2C Write Failure");
-    }
-
-    ESP_LOGW(  TAG, LOG_COLOR(LOG_COLOR_CYAN)"Notification of a time synchronization event");
-    drv_time_print("On SNTP Sync");
-}
-
-
-void drv_time_configure(void)
-{
-    //drv_time_load_config();   //to do load bTimeStampUseManual
-    #if USE_SNTP
-    drv_sntp_initialize_sntp(time_sync_notification_cb);
-    #endif
-    //drv_common_register_func_in_time_task(drv_time_proc, "drv_time_proc");
-    drv_sntp_set_time_manual(bTimeStampUseManual);
-}
-
 void drv_time_set_time_manual(bool input)
 {
+    #if CONFIG_DRV_SNTP_USE
     bTimeStampUseManual = input;
     drv_sntp_set_time_manual(bTimeStampUseManual);
+    #endif
 }
-
-#endif  //#if CONFIG_DRV_TIME_USE

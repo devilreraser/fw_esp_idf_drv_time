@@ -1,5 +1,7 @@
 menu "Component drv_time Configuration"
+
     config DRV_TIME_USE
         bool "Use drv_time"
         default y
+        
 endmenu
